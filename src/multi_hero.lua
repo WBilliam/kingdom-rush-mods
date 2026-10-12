@@ -1,7 +1,7 @@
 MultiHero = MultiHero or {}
 local M = MultiHero
 
-M.VERSION = "0.1.2"
+M.VERSION = "0.1.3"
 M.MAX_PARTY = 4
 M.HOTKEYS = { ["3"] = 1, ["4"] = 2, ["5"] = 3, ["6"] = 4 }
 M.FORMATION = {
@@ -268,9 +268,17 @@ function M.patch_level_utils(level_utils)
             store.selected_hero = name
             store.selected_hero_status = heroes.status[name]
             store.main_hero = nil
+            local level = type(store.level) == "table" and store.level or nil
+            local previous_locked_hero = level and level.locked_hero
+            if level then
+                level.locked_hero = false
+            end
             M._inserting_party_slot = index
             local ok, returned = pcall(old_insert, store, ...)
             M._inserting_party_slot = nil
+            if level then
+                level.locked_hero = previous_locked_hero
+            end
             if not ok then
                 error(returned, 0)
             end
@@ -331,13 +339,33 @@ local function arrange_hud(gui, entity)
     gui._multi_hero_hud_origin = gui._multi_hero_hud_origin or {
         x = view.pos and view.pos.x or 0, y = view.pos and view.pos.y or 0
     }
-    local column, row = (slot - 1) % 2, math.floor((slot - 1) / 2)
-    view.pos = view.pos or {x = 0, y = 0}
-    view.pos.x = gui._multi_hero_hud_origin.x + column * 78
-    view.pos.y = gui._multi_hero_hud_origin.y - row * 67
-    view.scale = view.scale or {x = 1, y = 1}
-    view.scale.x, view.scale.y = 0.78, 0.78
-    add_badge(view, slot + 2, "_multi_hero_badge")
+    view._multi_hero_slot = slot
+    local hero_views = {}
+    for _, portrait in ipairs(gui.heroes) do
+        hero_views[portrait] = true
+        if portrait._multi_hero_slot then
+            local portrait_slot = portrait._multi_hero_slot
+            local column = (portrait_slot - 1) % 2
+            local row = math.floor((portrait_slot - 1) / 2)
+            portrait.pos = portrait.pos or {x = 0, y = 0}
+            portrait.pos.x = gui._multi_hero_hud_origin.x + column * 84
+            portrait.pos.y = gui._multi_hero_hud_origin.y - row * 82
+            portrait.scale = portrait.scale or {x = 1, y = 1}
+            portrait.scale.x, portrait.scale.y = 0.78, 0.78
+            if type(portrait.set_style) == "function" then
+                portrait:set_style()
+            end
+            add_badge(portrait, portrait_slot + 2, "_multi_hero_badge")
+        end
+    end
+    local herobar = gui.hud_bottom and gui.hud_bottom.herobar
+    if type(herobar) == "table" and type(herobar.children) == "table" then
+        for _, child in ipairs(herobar.children) do
+            if not hero_views[child] then
+                child.hidden = true
+            end
+        end
+    end
     if slot == 1 and gui.hud_bottom then
         add_badge(gui.hud_bottom, "3 / 4 / 5 / 6", "_multi_hero_key_hint")
         local hint = gui.hud_bottom._multi_hero_key_hint

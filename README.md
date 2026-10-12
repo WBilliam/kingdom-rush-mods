@@ -1,6 +1,6 @@
 # Kingdom Rush Four-Hero Mod
 
-Current version: 0.1.2. This release loads the texture and sound groups for party slots 2–4 and assigns each slot before the native HUD callback, fixing invisible extra heroes and overlapping battle portraits.
+Current version: 0.1.3. This release permits the selected party in Heroic, Iron, and endless modes and cleans up the compact 2×2 battle HUD with standalone portrait frames and even spacing.
 
 A reversible runtime extension for the owned Steam edition of **Kingdom Rush**, build `24662480` / `kr1-desktop-6.4.46`. It extends an existing Reverse Gold 1.0.1 installation and supports ordered parties of zero to four distinct unlocked heroes.
 

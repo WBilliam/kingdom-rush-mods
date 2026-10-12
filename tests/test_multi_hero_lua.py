@@ -171,6 +171,25 @@ return calls, store.main_hero.template_name, #store._multi_hero_entities,
 """)
         self.assertEqual(["4", "a", "4", "2", "132", "78"], got)
 
+    def test_locked_mode_spawns_party_and_restores_native_restriction(self):
+        got = self.run_lua("""
+local calls, saw_unlocked = 0, true
+local lu = {insert_hero=function(store)
+  calls = calls + 1
+  saw_unlocked = saw_unlocked and store.level.locked_hero == false
+  if store.level.locked_hero then return nil end
+  store.main_hero={template_name=store.selected_hero, pos={x=100,y=50}, hero={xp=0}}
+  return store.main_hero
+end}
+M._active_slot={heroes={party={'a','b','c','d'}, status={a={},b={},c={},d={}}}}
+M.patch_level_utils(lu)
+local store={selected_hero='a', selected_hero_status={}, level={locked_hero=true}}
+local first=lu.insert_hero(store)
+return calls, tostring(saw_unlocked), tostring(store.level.locked_hero),
+  tostring(first and first.template_name), #store._multi_hero_entities
+""")
+        self.assertEqual(["4", "true", "true", "a", "4"], got)
+
     def test_scan_game_waits_for_level_exit_locations_before_fallback_spawn(self):
         got = self.run_lua("""
 local calls = 0
@@ -231,7 +250,50 @@ return #gui.heroes,
   gui.heroes[3].pos.x, gui.heroes[3].pos.y,
   gui.heroes[4].pos.x, gui.heroes[4].pos.y
 """)
-        self.assertEqual(["4", "10", "20", "88", "20", "10", "-47", "88", "-47"], got)
+        self.assertEqual(["4", "10", "20", "94", "20", "10", "-62", "94", "-62"], got)
+
+    def test_four_portrait_hud_uses_clean_standalone_grid(self):
+        got = self.run_lua("""
+GGLabel = nil
+local function portrait()
+  local view={pos={x=15,y=0}, style='default'}
+  function view:set_style(style) self.style=style or 'default' end
+  return view
+end
+local gui_module={add_hero=function(self, entity)
+  local view=portrait()
+  self.heroes[#self.heroes + 1]=view
+  local children=self.hud_bottom.herobar.children
+  children[#children + 1]=view
+  if #self.heroes > 1 then
+    self.heroes[1]:set_style('left')
+    view.pos={x=99,y=0}
+    view:set_style('right')
+    children[#children + 1]={kind='separator',hidden=false}
+  end
+end}
+M.patch_game_gui(gui_module)
+local gui=setmetatable({heroes={},hud_bottom={herobar={children={}}}},{__index=gui_module})
+for slot=1,4 do
+  M._inserting_party_slot=slot
+  gui:add_hero({_multi_hero_slot=slot})
+end
+M._inserting_party_slot=nil
+local hidden=0
+for _,child in ipairs(gui.hud_bottom.herobar.children) do
+  if child.kind=='separator' and child.hidden then hidden=hidden+1 end
+end
+return gui.heroes[1].pos.x,gui.heroes[1].pos.y,
+  gui.heroes[2].pos.x,gui.heroes[2].pos.y,
+  gui.heroes[3].pos.x,gui.heroes[3].pos.y,
+  gui.heroes[4].pos.x,gui.heroes[4].pos.y,
+  table.concat({gui.heroes[1].style,gui.heroes[2].style,
+    gui.heroes[3].style,gui.heroes[4].style},','),hidden
+""")
+        self.assertEqual([
+            "15", "0", "99", "0", "15", "-82", "99", "-82",
+            "default,default,default,default", "3",
+        ], got)
 
     def test_director_queues_and_tracks_resources_for_extra_party_heroes(self):
         got = self.run_lua("""

@@ -26,3 +26,10 @@
 - Fixed portraits 3 and 4 overlapping the second portrait by assigning the party slot before the native hero-added GUI callback.
 - Added focused regression coverage for resource loading and the compact 2×2 battle HUD positions.
 
+## 2026-10-12 — Four Hero 0.1.3
+
+- User acceptance confirmed campaign tests 1–7: visible sprites, correct behavior, XP gain, hotkeys, and level re-entry.
+- Fixed Heroic, Iron, and endless party insertion by bypassing the native `locked_hero` restriction only during each party insertion and restoring it immediately afterward.
+- Reworked the 2×2 battle HUD to use standalone frames, hide the native stacked separators, and space portraits on an 84×82 grid at the existing 78% scale.
+- Added regression coverage for locked-mode insertion/restoration and clean four-portrait HUD geometry.
+
