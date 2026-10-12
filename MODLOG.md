@@ -20,3 +20,9 @@
 - Added a regression test covering delayed initialization.
 - Reinstalled transactionally and verified the resulting archive.
 
+## 2026-10-12 — Four Hero 0.1.2
+
+- Fixed party slots 2–4 rendering only health bars by queueing and tracking each extra hero's texture and sound groups during the native game transition.
+- Fixed portraits 3 and 4 overlapping the second portrait by assigning the party slot before the native hero-added GUI callback.
+- Added focused regression coverage for resource loading and the compact 2×2 battle HUD positions.
+

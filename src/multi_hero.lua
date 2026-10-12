@@ -1,7 +1,7 @@
 MultiHero = MultiHero or {}
 local M = MultiHero
 
-M.VERSION = "0.1.1"
+M.VERSION = "0.1.2"
 M.MAX_PARTY = 4
 M.HOTKEYS = { ["3"] = 1, ["4"] = 2, ["5"] = 3, ["6"] = 4 }
 M.FORMATION = {
@@ -268,7 +268,12 @@ function M.patch_level_utils(level_utils)
             store.selected_hero = name
             store.selected_hero_status = heroes.status[name]
             store.main_hero = nil
-            local returned = old_insert(store, ...)
+            M._inserting_party_slot = index
+            local ok, returned = pcall(old_insert, store, ...)
+            M._inserting_party_slot = nil
+            if not ok then
+                error(returned, 0)
+            end
             local entity = returned or store.main_hero
             if type(entity) == "table" then
                 entity._multi_hero_slot = index
@@ -371,12 +376,80 @@ function M.patch_game_gui(game_gui)
     if type(game_gui.add_hero) == "function" then
         local old_add = game_gui.add_hero
         game_gui.add_hero = function(self, entity, ...)
+            if type(entity) == "table" and entity._multi_hero_slot == nil
+                and M._inserting_party_slot ~= nil then
+                entity._multi_hero_slot = M._inserting_party_slot
+            end
             local result = old_add(self, entity, ...)
             arrange_hud(self, entity)
             return result
         end
     end
     log("game GUI hook attached")
+    return true
+end
+
+local function append_unique(list, value)
+    for _, current in ipairs(list) do
+        if current == value then
+            return false
+        end
+    end
+    list[#list + 1] = value
+    return true
+end
+
+function M.patch_director(director)
+    if type(director) ~= "table" or director._multi_hero_patched
+        or type(director.queue_load_item_named) ~= "function" then
+        return false
+    end
+    director._multi_hero_patched = true
+    local old_queue = director.queue_load_item_named
+    director.queue_load_item_named = function(self, name, ...)
+        local result = old_queue(self, name, ...)
+        if name ~= "game" then
+            return result
+        end
+        local heroes = type(M._active_slot) == "table" and M._active_slot.heroes or nil
+        local party = type(heroes) == "table" and M.normalize_heroes(heroes) or {}
+        local queued = self.queued_item
+        local game_item = rawget(_G, "game")
+        if type(queued) == "table" and queued.item_name == "game" then
+            game_item = queued
+        elseif type(queued) == "table" and type(queued.game_item) == "table" then
+            game_item = queued.game_item
+        end
+        local level = type(game_item) == "table" and type(game_item.store) == "table"
+            and game_item.store.level or nil
+        if #party < 2 or type(level) ~= "table" then
+            return result
+        end
+        level.required_textures = type(level.required_textures) == "table"
+            and level.required_textures or {}
+        level.required_sounds = type(level.required_sounds) == "table"
+            and level.required_sounds or {}
+        local textures, sounds = {}, {}
+        for index = 2, #party do
+            local sound = party[index]
+            local texture = "go_" .. sound
+            if append_unique(level.required_textures, texture) then
+                textures[#textures + 1] = texture
+            end
+            if append_unique(level.required_sounds, sound) then
+                sounds[#sounds + 1] = sound
+            end
+        end
+        if #textures > 0 and type(self.load_texture_groups) == "function" then
+            self:load_texture_groups(textures, self.params and self.params.texture_size,
+                game_item.ref_res, true, "game")
+        end
+        if #sounds > 0 and type(self.load_sound_groups) == "function" then
+            self:load_sound_groups(sounds)
+        end
+        return result
+    end
+    log("director resource hook attached")
     return true
 end
 
@@ -657,6 +730,8 @@ function M.bootstrap()
             M.patch_level_utils(loaded)
         elseif name == "game_gui" then
             M.patch_game_gui(loaded)
+        elseif name == "director" then
+            M.patch_director(loaded)
         elseif name == "data.map_data" then
             M.capture_hero_unlocks(loaded)
         end
@@ -667,6 +742,7 @@ end
 
 function M.after_main()
     M.patch_hero_room_class(rawget(_G, "HeroRoomViewKR1"))
+    M.patch_director(rawget(_G, "director"))
     if love and type(love.update) == "function" and not M._update_wrapped then
         M._update_wrapped = true
         local old_update = love.update

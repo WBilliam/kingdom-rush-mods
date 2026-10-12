@@ -208,6 +208,64 @@ return tostring(three), selected, tostring(space), other, old_calls
 """)
         self.assertEqual(["true", "a", "true", "old:x", "1"], got)
 
+    def test_spawn_slot_is_available_when_native_gui_adds_each_portrait(self):
+        got = self.run_lua("""
+GGLabel = nil
+local gui_module = {add_hero=function(self, entity)
+  self.heroes[#self.heroes + 1] = {pos={x=10, y=20}}
+end}
+M.patch_game_gui(gui_module)
+local gui = setmetatable({heroes={}, hud_bottom={}}, {__index=gui_module})
+local lu = {insert_hero=function(store)
+  local entity={template_name=store.selected_hero, pos={x=100,y=50}, hero={xp=0}}
+  store.main_hero=entity
+  gui:add_hero(entity)
+  return entity
+end}
+M._active_slot={heroes={party={'a','b','c','d'}, status={a={},b={},c={},d={}}}}
+M.patch_level_utils(lu)
+lu.insert_hero({selected_hero='a', selected_hero_status={}, level={}})
+return #gui.heroes,
+  gui.heroes[1].pos.x, gui.heroes[1].pos.y,
+  gui.heroes[2].pos.x, gui.heroes[2].pos.y,
+  gui.heroes[3].pos.x, gui.heroes[3].pos.y,
+  gui.heroes[4].pos.x, gui.heroes[4].pos.y
+""")
+        self.assertEqual(["4", "10", "20", "88", "20", "10", "-47", "88", "-47"], got)
+
+    def test_director_queues_and_tracks_resources_for_extra_party_heroes(self):
+        got = self.run_lua("""
+local texture_calls, sound_calls = {}, {}
+local director = {
+  params={texture_size='ipad'},
+  queue_load_item_named=function(self, name)
+    game={ref_res=768, store={level={required_textures={'stage'}, required_sounds={'music'}}}}
+    return 'queued:' .. name
+  end,
+  load_texture_groups=function(self, groups)
+    texture_calls[#texture_calls + 1]=table.concat(groups, ',')
+  end,
+  load_sound_groups=function(self, groups)
+    sound_calls[#sound_calls + 1]=table.concat(groups, ',')
+  end
+}
+M._active_slot={heroes={party={'hero_gerald','hero_alleria','hero_ignus','hero_bolin'},
+  status={hero_gerald={},hero_alleria={},hero_ignus={},hero_bolin={}}}}
+local patched=M.patch_director(director)
+local result=director:queue_load_item_named('game')
+return tostring(patched), result,
+  texture_calls[1], sound_calls[1],
+  table.concat(game.store.level.required_textures, ','),
+  table.concat(game.store.level.required_sounds, ',')
+""")
+        self.assertEqual([
+            "true", "queued:game",
+            "go_hero_alleria,go_hero_ignus,go_hero_bolin",
+            "hero_alleria,hero_ignus,hero_bolin",
+            "stage,go_hero_alleria,go_hero_ignus,go_hero_bolin",
+            "music,hero_alleria,hero_ignus,hero_bolin",
+        ], got)
+
     def test_reverse_gold_and_multi_hero_require_wrappers_chain_together(self):
         exe = Path(r"D:\Steam\steamapps\common\Kingdom Rush\Kingdom Rush.exe")
         with zipfile.ZipFile(exe) as archive:
