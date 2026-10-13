@@ -1,12 +1,13 @@
 # Kingdom Rush Four-Hero Mod
 
-Current version: 0.1.3. This release permits the selected party in Heroic, Iron, and endless modes and cleans up the compact 2×2 battle HUD with standalone portrait frames and even spacing.
+Current version: 0.1.4. This release adds a Hero Room `RANDOM x4` button that replaces the party with four distinct currently available heroes.
 
 A reversible runtime extension for the owned Steam edition of **Kingdom Rush**, build `24662480` / `kr1-desktop-6.4.46`. It extends an existing Reverse Gold 1.0.1 installation and supports ordered parties of zero to four distinct unlocked heroes.
 
 ## Features
 
 - Select 0–4 heroes in the Hero Room by clicking unlocked portraits.
+- Use `RANDOM x4` to select up to four distinct unlocked and progression-available heroes at once.
 - See each selected portrait's assigned key and manage the four-slot strip with remove/left/right controls.
 - Use `3`, `4`, `5`, and `6` for party slots 1–4 in battle. `1` and `2` remain power keys; Space no longer selects a hero.
 - Spawn the party in a small formation in campaign, Heroic, Iron, and endless modes.

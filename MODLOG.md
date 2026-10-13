@@ -33,3 +33,9 @@
 - Reworked the 2×2 battle HUD to use standalone frames, hide the native stacked separators, and space portraits on an 84×82 grid at the existing 78% scale.
 - Added regression coverage for locked-mode insertion/restoration and clean four-portrait HUD geometry.
 
+## 2026-10-13 — Four Hero 0.1.4
+
+- Added a `RANDOM x4` Hero Room button above the party strip.
+- Random selection samples without replacement from unlocked and progression-available heroes, selects up to four, mirrors party slot 1, saves once, and refreshes the room immediately.
+- Added deterministic tests for candidate filtering, distinct selection, the four-hero limit, button wiring, save behavior, and UI refresh.
+

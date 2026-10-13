@@ -1,7 +1,7 @@
 MultiHero = MultiHero or {}
 local M = MultiHero
 
-M.VERSION = "0.1.3"
+M.VERSION = "0.1.4"
 M.MAX_PARTY = 4
 M.HOTKEYS = { ["3"] = 1, ["4"] = 2, ["5"] = 3, ["6"] = 4 }
 M.FORMATION = {
@@ -108,6 +108,37 @@ function M.move_hero(heroes, index, delta)
         return false
     end
     party[index], party[destination] = party[destination], party[index]
+    mirror_selected(heroes)
+    return true
+end
+
+function M.randomize_party(heroes, random)
+    if type(heroes) ~= "table" or type(heroes.status) ~= "table" then
+        return false
+    end
+    local candidates = {}
+    for name in pairs(heroes.status) do
+        if type(name) == "string" and name ~= "" and unlocked(heroes.status, name) then
+            candidates[#candidates + 1] = name
+        end
+    end
+    table.sort(candidates)
+    local choose = type(random) == "function" and random or math.random
+    for index = #candidates, 2, -1 do
+        local selected = choose(index)
+        if type(selected) ~= "number" then
+            return false
+        end
+        selected = math.floor(selected)
+        if selected < 1 or selected > index then
+            return false
+        end
+        candidates[index], candidates[selected] = candidates[selected], candidates[index]
+    end
+    heroes.party = {}
+    for index = 1, math.min(M.MAX_PARTY, #candidates) do
+        heroes.party[index] = candidates[index]
+    end
     mirror_selected(heroes)
     return true
 end
@@ -512,15 +543,19 @@ local function save_room_slot(room, slot)
     M.refresh_hero_room(room, slot)
 end
 
-function M.hero_room_action(room, action, index)
+function M.hero_room_action(room, action, index, random)
     local slot = room_slot(room)
     local heroes = type(slot) == "table" and slot.heroes or nil
     local party = type(heroes) == "table" and M.normalize_heroes(heroes) or nil
-    if not party or type(index) ~= "number" then
+    if not party then
         return false
     end
     local changed = false
-    if action == "remove" and party[index] then
+    if action == "random" then
+        changed = M.randomize_party(heroes, random)
+    elseif type(index) ~= "number" then
+        return false
+    elseif action == "remove" and party[index] then
         table.remove(party, index)
         mirror_selected(heroes)
         changed = true
@@ -535,7 +570,7 @@ function M.hero_room_action(room, action, index)
     return changed
 end
 
-local function make_room_label(parent, text, x, width)
+local function make_room_label(parent, text, x, width, y)
     local label_class = rawget(_G, "GGLabel") or rawget(_G, "KLabel")
     if type(label_class) ~= "table" or type(label_class.new) ~= "function" then
         return nil
@@ -544,7 +579,7 @@ local function make_room_label(parent, text, x, width)
     if not ok or type(label) ~= "table" then
         return nil
     end
-    label.text, label.pos = text, {x = x, y = 0}
+    label.text, label.pos = text, {x = x, y = y or 0}
     label.font_size, label.fit_lines = 15, 1
     label.text_align, label.vertical_align = "center", "middle"
     label.colors = label.colors or {}
@@ -570,20 +605,25 @@ local function ensure_room_strip(room)
         or type(parent.add_child) ~= "function" then
         return nil
     end
-    local ok, strip = pcall(view_class.new, view_class, {x = 620, y = 36})
+    local ok, strip = pcall(view_class.new, view_class, {x = 620, y = 70})
     if not ok or type(strip) ~= "table" then
         return nil
     end
     local parent_height = parent.size and parent.size.y or 760
     strip.id = "multi_hero_party_strip"
-    strip.pos = {x = 70, y = parent_height - 78}
+    strip.pos = {x = 70, y = parent_height - 112}
     strip.slots = {}
+    local random_button = make_room_label(strip, "RANDOM x4", 490, 130, 0)
+    if random_button then
+        bind_room_action(random_button, room, "random")
+        strip.random = random_button
+    end
     for index = 1, M.MAX_PARTY do
         local x = (index - 1) * 150
-        local item = make_room_label(strip, tostring(index + 2) .. "  --", x + 20, 90)
-        local left = make_room_label(strip, "<", x, 20)
-        local right = make_room_label(strip, ">", x + 110, 20)
-        local remove = make_room_label(strip, "x", x + 130, 20)
+        local item = make_room_label(strip, tostring(index + 2) .. "  --", x + 20, 90, 34)
+        local left = make_room_label(strip, "<", x, 20, 34)
+        local right = make_room_label(strip, ">", x + 110, 20, 34)
+        local remove = make_room_label(strip, "x", x + 130, 20, 34)
         if item and left and right and remove then
             bind_room_action(left, room, "left", index)
             bind_room_action(right, room, "right", index)

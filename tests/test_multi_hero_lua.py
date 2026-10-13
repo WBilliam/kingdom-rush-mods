@@ -65,6 +65,18 @@ return tostring(changed), reason, tostring(removed), table.concat(heroes.party, 
 """)
         self.assertEqual(["false", "full", "true", "a,c,d", "a"], got)
 
+    def test_random_party_samples_four_distinct_available_heroes(self):
+        got = self.run_lua("""
+M._hero_unlock_levels={late=10}
+M._current_unlock_level_count=3
+local heroes={party={'old'},status={
+  a={},b={},c={},d={},e={},locked={unlocked=false},late={}
+}}
+local ok,changed=pcall(M.randomize_party,heroes,function(maximum) return 1 end)
+return tostring(ok),tostring(changed),table.concat(heroes.party,','),heroes.selected
+""")
+        self.assertEqual(["true", "true", "b,c,d,e", "b"], got)
+
     def test_reorder_updates_order_and_selected_mirror(self):
         got = self.run_lua("""
 local heroes = {party={'a','b','c'}, status={a={},b={},c={}}}
@@ -406,6 +418,29 @@ return tostring(left), tostring(right), tostring(remove),
   room._multi_hero_slot.heroes.selected, saves
 """)
         self.assertEqual(["true", "true", "true", "c,b", "c", "3"], got)
+
+    def test_hero_room_random_button_selects_party_and_saves_once(self):
+        got = self.run_lua("""
+local saves=0
+M._storage={save_slot=function() saves=saves+1 end}
+KView={}
+function KView:new(size)
+  local view={size=size,children={}}
+  function view:add_child(child) self.children[#self.children+1]=child end
+  return view
+end
+GGLabel={}
+function GGLabel:new(size) return {size=size} end
+local parent=KView:new({x=800,y=760})
+local room={back=parent,_multi_hero_slot={heroes={party={},status={a={},b={},c={},d={}}}}}
+M.refresh_hero_room(room,room._multi_hero_slot)
+local button=room._multi_hero_strip and room._multi_hero_strip.random
+local ok=pcall(function() button:on_click() end)
+return tostring(ok),button and button.text or 'nil',
+  #room._multi_hero_slot.heroes.party,
+  tostring(room._multi_hero_slot.heroes.selected ~= nil),saves
+""")
+        self.assertEqual(["true", "RANDOM x4", "4", "true", "1"], got)
 
     def test_silent_initial_selection_does_not_toggle_migrated_hero_off(self):
         got = self.run_lua("""
