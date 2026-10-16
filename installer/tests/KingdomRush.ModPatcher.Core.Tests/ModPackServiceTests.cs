@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using KingdomRush.ModPatcher.Core.Compatibility;
 using KingdomRush.ModPatcher.Core.Errors;
+using KingdomRush.ModPatcher.Core.Discovery;
 using KingdomRush.ModPatcher.Core.Payloads;
 using KingdomRush.ModPatcher.Core.Transactions;
 using Xunit;
@@ -191,6 +192,13 @@ internal sealed class TemporaryInstall : IDisposable
         Capabilities,
         manifests ?? new ManifestStore(),
         () => new DateTimeOffset(2026, 10, 17, 1, 2, 3, TimeSpan.Zero));
+
+    internal GameDiscoveryService CreateDiscovery(IRegistryReader registry, string defaultSteamPath) => new(
+        registry,
+        CreateService(),
+        Path.GetDirectoryName(Paths.SaveDirectory)!,
+        defaultSteamPath,
+        Build);
 
     internal InstallManifest Manifest(string state) => new(
         1, "0.1.0", "1.0.1", "0.1.4", Build.BuildId,
