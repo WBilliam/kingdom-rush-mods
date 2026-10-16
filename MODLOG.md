@@ -45,4 +45,5 @@
 - The installer detects Steam libraries, validates the exact clean build, patches the player's own fused archive, and ships no game files.
 - Added verified executable/save backups, pending-transaction recovery, Verify, and byte-exact Uninstall / Restore.
 - Added synthetic archive, lifecycle, Steam discovery, and presenter tests plus a Windows GitHub release workflow and SHA-256 artifact validation.
+- End-to-end acceptance now proves both embedded payloads install together, corruption is detected, saves remain unchanged, and uninstall restores the original executable byte-for-byte.
 
