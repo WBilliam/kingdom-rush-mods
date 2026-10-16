@@ -27,7 +27,12 @@ public sealed class PayloadTests
         Assert.Equal(
             "cd624da2eadfb16888c413fa4514fa66b3a6579a10dbf74c290aca5343df947b",
             Convert.ToHexString(SHA256.HashData(payloads.ReverseGold)).ToLowerInvariant());
-        Assert.NotEmpty(payloads.FourHero);
+        Assert.Equal(
+            "b759626ad975bec532ae9f7f3190c617b568655e544c31bb9855176a18f093dd",
+            Convert.ToHexString(SHA256.HashData(payloads.FourHero)).ToLowerInvariant());
+        Assert.DoesNotContain('\r', Encoding.UTF8.GetString(payloads.ReverseGold));
+        Assert.DoesNotContain('\r', Encoding.UTF8.GetString(payloads.FourHero));
+        Assert.DoesNotContain('\r', Encoding.UTF8.GetString(payloads.Bootstrap));
         payloads.ValidateHashes();
     }
 
