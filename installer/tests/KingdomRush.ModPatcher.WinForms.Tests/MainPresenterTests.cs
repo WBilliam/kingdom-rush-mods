@@ -13,9 +13,11 @@ public sealed class MainPresenterTests
         FakeView view = new();
         FakeBackend backend = new() { Candidates = [@"D:\Games\Kingdom Rush"] };
         MainPresenter presenter = new(view, backend, (_, _) => { });
+        int callingThread = Environment.CurrentManagedThreadId;
 
         await presenter.InitializeAsync(CancellationToken.None);
 
+        Assert.NotEqual(callingThread, backend.FindCandidatesThreadId);
         Assert.Equal(@"D:\Games\Kingdom Rush", view.LastState.GameDirectory);
         Assert.True(view.LastState.CanInstall);
         Assert.False(view.LastState.CanVerify);
@@ -99,6 +101,39 @@ public sealed class MainPresenterTests
         Assert.Contains(logs, line => line.Contains(@"C:\Game", StringComparison.Ordinal));
         Assert.DoesNotContain(logs, line => line.Contains("save contents", StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public async Task InstallWorkRunsAwayFromTheCallingUiThread()
+    {
+        FakeView view = new() { Confirmation = true };
+        FakeBackend backend = new();
+        MainPresenter presenter = new(view, backend, (_, _) => { });
+        await presenter.BrowseSelectedAsync(@"C:\Game", CancellationToken.None);
+        int callingThread = Environment.CurrentManagedThreadId;
+
+        await presenter.InstallAsync(CancellationToken.None);
+
+        Assert.NotEqual(callingThread, backend.InstallThreadId);
+    }
+
+    [Fact]
+    public async Task LifetimeCancellationPropagatesWithoutRenderingAnOperationFailure()
+    {
+        FakeView view = new();
+        FakeBackend backend = new()
+        {
+            Status = new InstallationStatus(InstallationState.InstalledHealthy, "installed"),
+        };
+        MainPresenter presenter = new(view, backend, (_, _) => { });
+        await presenter.BrowseSelectedAsync(@"C:\Game", CancellationToken.None);
+        using CancellationTokenSource cancellation = new();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => presenter.VerifyAsync(cancellation.Token));
+
+        Assert.DoesNotContain(view.States, state => state.GameStatus.StartsWith("Operation failed", StringComparison.Ordinal));
+    }
 }
 
 internal sealed class FakeView : IInstallerView
@@ -120,9 +155,15 @@ internal sealed class FakeBackend : IInstallerBackend
     internal InstallationStatus Status { get; set; } = new(InstallationState.ReadyToInstall, "Supported clean build");
     internal string? LastInspected { get; private set; }
     internal int InstallCalls { get; private set; }
+    internal int InstallThreadId { get; private set; }
+    internal int FindCandidatesThreadId { get; private set; }
     internal Exception? VerifyError { get; set; }
 
-    public IReadOnlyList<string> FindCandidates() => Candidates;
+    public IReadOnlyList<string> FindCandidates()
+    {
+        FindCandidatesThreadId = Environment.CurrentManagedThreadId;
+        return Candidates;
+    }
     public Task<InstallationStatus> InspectAsync(string gameDirectory, CancellationToken token)
     {
         LastInspected = gameDirectory;
@@ -131,6 +172,7 @@ internal sealed class FakeBackend : IInstallerBackend
     public Task InstallAsync(string gameDirectory, IProgress<OperationProgress> progress, CancellationToken token)
     {
         InstallCalls++;
+        InstallThreadId = Environment.CurrentManagedThreadId;
         progress.Report(new OperationProgress("commit", "commit", true));
         Status = new InstallationStatus(InstallationState.InstalledHealthy, "installed");
         return Task.CompletedTask;

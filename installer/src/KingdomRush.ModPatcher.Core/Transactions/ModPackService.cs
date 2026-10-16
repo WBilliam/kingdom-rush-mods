@@ -9,6 +9,9 @@ namespace KingdomRush.ModPatcher.Core.Transactions;
 public sealed class ModPackService
 {
     private const long SafetyMargin = 64L * 1024 * 1024;
+    private const string ModPackVersion = "0.1.0";
+    private const string ReverseGoldVersion = "1.0.1";
+    private const string FourHeroVersion = "0.1.4";
     private readonly SupportedBuild _build;
     private readonly ModPayloadSet _payloads;
     private readonly IFileSystemCapabilities _capabilities;
@@ -75,7 +78,7 @@ public sealed class ModPackService
             paths.SaveDirectory,
             Path.Combine(paths.GameDirectory, $"kingdom_rush_modpack_saves_{stamp}.zip"));
         InstallManifest prepared = new(
-            1, "0.1.0", "1.0.1", "0.1.4", _build.BuildId, now,
+            1, ModPackVersion, ReverseGoldVersion, FourHeroVersion, _build.BuildId, now,
             paths.ExecutablePath, backupPath, patched.OriginalSha256, patched.PatchedSha256,
             saveBackup.Path, saveBackup.Sha256, saveBackup.Files,
             ModPayloadSet.ReverseGoldSha256, ModPayloadSet.FourHeroSha256, "prepared");
@@ -132,17 +135,15 @@ public sealed class ModPackService
         cancellationToken.ThrowIfCancellationRequested();
         RecoverPendingAsync(paths, cancellationToken).GetAwaiter().GetResult();
         InstallManifest manifest = _manifests.Read(paths.ManifestPath);
-        if (manifest.TransactionState != "installed" || manifest.GameBuildId != _build.BuildId)
-        {
-            throw new PatcherException("Installed manifest identity or state is invalid.");
-        }
+        ValidateInstalledManifest(manifest, paths);
         RequireHash(paths.ExecutablePath, manifest.PatchedSha256, "installed executable");
         RequireHash(manifest.BackupPath, manifest.OriginalSha256, "executable backup");
         RequireHash(manifest.SaveBackupPath, manifest.SaveBackupSha256, "save backup");
         SaveBackupService.Verify(manifest.SaveBackupPath, manifest.SaveBackupFiles);
         FusedArchive archive = FusedArchive.Read(File.ReadAllBytes(paths.ExecutablePath));
-        RequireEntryHash(archive, "reverse_gold.lua", manifest.ReverseGoldSha256);
-        RequireEntryHash(archive, "multi_hero.lua", manifest.FourHeroSha256);
+        RequireExactEntry(archive, "main.lua", _payloads.Bootstrap);
+        RequireExactEntry(archive, "reverse_gold.lua", _payloads.ReverseGold);
+        RequireExactEntry(archive, "multi_hero.lua", _payloads.FourHero);
         _ = archive.Entries.Single(entry =>
             string.Equals(entry.Name, "_modpack_main_orig.lua", StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(new VerificationResult("ok", manifest.PatchedSha256));
@@ -156,6 +157,7 @@ public sealed class ModPackService
         cancellationToken.ThrowIfCancellationRequested();
         RecoverPendingAsync(paths, cancellationToken).GetAwaiter().GetResult();
         InstallManifest manifest = _manifests.Read(paths.ManifestPath);
+        ValidateInstalledManifest(manifest, paths);
         string current = HashFile(paths.ExecutablePath);
         if (current != manifest.PatchedSha256 && current != manifest.OriginalSha256)
         {
@@ -206,12 +208,34 @@ public sealed class ModPackService
         }
     }
 
-    private static void RequireEntryHash(FusedArchive archive, string name, string expected)
+    private void ValidateInstalledManifest(InstallManifest manifest, InstallPaths paths)
+    {
+        bool identityMatches = manifest.TransactionState == "installed"
+            && manifest.GameBuildId == _build.BuildId
+            && manifest.ModPackVersion == ModPackVersion
+            && manifest.ReverseGoldVersion == ReverseGoldVersion
+            && manifest.FourHeroVersion == FourHeroVersion
+            && manifest.ReverseGoldSha256 == ModPayloadSet.ReverseGoldSha256
+            && manifest.FourHeroSha256 == ModPayloadSet.FourHeroSha256;
+        string gameDirectory = Path.GetFullPath(paths.GameDirectory);
+        bool pathsMatch = Path.GetFullPath(manifest.ExecutablePath).Equals(
+                Path.GetFullPath(paths.ExecutablePath), StringComparison.OrdinalIgnoreCase)
+            && IsDirectChild(manifest.BackupPath, gameDirectory)
+            && IsDirectChild(manifest.SaveBackupPath, gameDirectory);
+        if (!identityMatches || !pathsMatch)
+        {
+            throw new PatcherException("Installed manifest identity, version, or path is invalid.");
+        }
+    }
+
+    private static bool IsDirectChild(string path, string parent) =>
+        string.Equals(Path.GetDirectoryName(Path.GetFullPath(path)), parent, StringComparison.OrdinalIgnoreCase);
+
+    private static void RequireExactEntry(FusedArchive archive, string name, byte[] expected)
     {
         FusedArchiveEntry entry = archive.Entries.Single(item =>
             string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
-        string actual = Convert.ToHexString(SHA256.HashData(entry.Data)).ToLowerInvariant();
-        if (actual != expected)
+        if (!entry.Data.AsSpan().SequenceEqual(expected))
         {
             throw new PatcherException($"Installed archive entry hash mismatch: {name}");
         }

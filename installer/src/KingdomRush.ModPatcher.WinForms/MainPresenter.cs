@@ -44,7 +44,8 @@ public sealed class MainPresenter
 
     public async Task InitializeAsync(CancellationToken token)
     {
-        string? candidate = _backend.FindCandidates().FirstOrDefault();
+        IReadOnlyList<string> candidates = await Task.Run(_backend.FindCandidates, token);
+        string? candidate = candidates.FirstOrDefault();
         if (candidate is null)
         {
             _state = InstallerViewState.FromStatus("", new InstallationStatus(InstallationState.Missing, "Kingdom Rush was not detected. Choose its folder."));
@@ -62,7 +63,8 @@ public sealed class MainPresenter
 
     public async Task BrowseSelectedAsync(string gameDirectory, CancellationToken token)
     {
-        InstallationStatus status = await _backend.InspectAsync(gameDirectory, token);
+        InstallationStatus status = await Task.Run(
+            () => _backend.InspectAsync(gameDirectory, token), token);
         _state = InstallerViewState.FromStatus(gameDirectory, status);
         _view.Render(_state);
         _log($"Inspected game directory: {gameDirectory} ({status.State})", null);
@@ -108,8 +110,12 @@ public sealed class MainPresenter
         });
         try
         {
-            await operation(progress, token);
+            await Task.Run(() => operation(progress, token), token);
             await BrowseSelectedAsync(directory, CancellationToken.None);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception error)
         {

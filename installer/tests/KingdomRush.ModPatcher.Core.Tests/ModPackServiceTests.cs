@@ -1,4 +1,6 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
+using KingdomRush.ModPatcher.Core.Archives;
 using KingdomRush.ModPatcher.Core.Compatibility;
 using KingdomRush.ModPatcher.Core.Errors;
 using KingdomRush.ModPatcher.Core.Discovery;
@@ -156,6 +158,58 @@ public sealed class ModPackServiceTests
         Assert.Equal("installed", result.TransactionState);
         Assert.True(File.Exists(fixture.Paths.ManifestPath));
         Assert.False(File.Exists(fixture.Paths.PendingManifestPath));
+    }
+
+    [Fact]
+    public async Task VerifyRejectsManifestFromDifferentInstallerOrModVersions()
+    {
+        using TemporaryInstall fixture = new();
+        ModPackService service = fixture.CreateService();
+        InstallManifest installed = await service.InstallAsync(fixture.Paths, null, CancellationToken.None);
+        new ManifestStore().WriteAtomic(fixture.Paths.ManifestPath, installed with
+        {
+            ModPackVersion = "9.9.9",
+            ReverseGoldVersion = "9.9.9",
+        });
+
+        await Assert.ThrowsAsync<PatcherException>(
+            () => service.VerifyAsync(fixture.Paths, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task VerifyRejectsBootstrapThatDoesNotMatchThisInstaller()
+    {
+        using TemporaryInstall fixture = new();
+        ModPackService service = fixture.CreateService();
+        InstallManifest installed = await service.InstallAsync(fixture.Paths, null, CancellationToken.None);
+        byte[] modified = RewriteArchiveEntry(
+            File.ReadAllBytes(fixture.Paths.ExecutablePath), "main.lua", "return 'tampered'\n"u8.ToArray());
+        File.WriteAllBytes(fixture.Paths.ExecutablePath, modified);
+        new ManifestStore().WriteAtomic(fixture.Paths.ManifestPath, installed with
+        {
+            PatchedSha256 = Convert.ToHexString(SHA256.HashData(modified)).ToLowerInvariant(),
+        });
+
+        await Assert.ThrowsAsync<PatcherException>(
+            () => service.VerifyAsync(fixture.Paths, CancellationToken.None));
+    }
+
+    private static byte[] RewriteArchiveEntry(byte[] image, string name, byte[] replacement)
+    {
+        FusedArchive source = FusedArchive.Read(image);
+        using MemoryStream zip = new();
+        using (ZipArchive target = new(zip, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (FusedArchiveEntry entry in source.Entries)
+            {
+                ZipArchiveEntry created = target.CreateEntry(entry.Name, CompressionLevel.Optimal);
+                created.LastWriteTime = entry.LastWriteTime;
+                created.ExternalAttributes = entry.ExternalAttributes;
+                using Stream stream = created.Open();
+                stream.Write(entry.Name.Equals(name, StringComparison.OrdinalIgnoreCase) ? replacement : entry.Data);
+            }
+        }
+        return [.. source.Prefix, .. zip.ToArray()];
     }
 }
 

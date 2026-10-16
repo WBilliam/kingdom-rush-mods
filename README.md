@@ -43,10 +43,9 @@ The initial executable is unsigned, so Windows SmartScreen may show an unknown-p
 
 Installation creates, before replacement:
 
-- A hash-named backup of the Reverse Gold executable.
+- A hash-named backup of the clean game executable.
 - A ZIP backup of `%APPDATA%\Kingdom Rush`.
 - `kingdom_rush_modpack_manifest.json` with hashes and restore paths.
-- An entry in the game directory's `MODLOG.md`.
 
 Select **Uninstall / Restore** to restore the exact clean executable.
 

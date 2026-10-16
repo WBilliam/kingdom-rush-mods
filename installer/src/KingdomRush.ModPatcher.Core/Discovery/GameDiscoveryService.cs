@@ -85,7 +85,9 @@ public sealed class GameDiscoveryService
             try
             {
                 await _modPack.VerifyAsync(paths, cancellationToken);
-                return new InstallationStatus(InstallationState.InstalledHealthy, "Reverse Gold and Four-Hero are installed and verified.");
+                return new InstallationStatus(
+                    InstallationState.InstalledHealthy,
+                    $"Kingdom Rush {_build.GameVersion} (Steam build {_build.BuildId}): Reverse Gold and Four-Hero are installed and verified.");
             }
             catch (Exception error)
             {
@@ -95,7 +97,9 @@ public sealed class GameDiscoveryService
         string actual = HashFile(paths.ExecutablePath);
         if (string.Equals(actual, _build.ExecutableSha256, StringComparison.OrdinalIgnoreCase))
         {
-            return new InstallationStatus(InstallationState.ReadyToInstall, "Supported clean Kingdom Rush build detected.");
+            return new InstallationStatus(
+                InstallationState.ReadyToInstall,
+                $"Supported Kingdom Rush {_build.GameVersion} (Steam build {_build.BuildId}) detected.");
         }
         return new InstallationStatus(
             InstallationState.Unsupported,

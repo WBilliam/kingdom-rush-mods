@@ -46,4 +46,5 @@
 - Added verified executable/save backups, pending-transaction recovery, Verify, and byte-exact Uninstall / Restore.
 - Added synthetic archive, lifecycle, Steam discovery, and presenter tests plus a Windows GitHub release workflow and SHA-256 artifact validation.
 - End-to-end acceptance now proves both embedded payloads install together, corruption is detected, saves remain unchanged, and uninstall restores the original executable byte-for-byte.
+- Final review moved filesystem work off the WinForms UI thread and tightened verification of installer versions, manifest paths, and exact embedded payload bytes.
 

@@ -59,9 +59,13 @@ public sealed class GameDiscoveryServiceTests
         File.WriteAllBytes(Path.Combine(unsupported, "Kingdom Rush.exe"), [1, 2, 3]);
         Assert.Equal(InstallationState.Unsupported, (await service.InspectAsync(unsupported, CancellationToken.None)).State);
 
-        Assert.Equal(InstallationState.ReadyToInstall, (await service.InspectAsync(fixture.Paths.GameDirectory, CancellationToken.None)).State);
+        InstallationStatus ready = await service.InspectAsync(fixture.Paths.GameDirectory, CancellationToken.None);
+        Assert.Equal(InstallationState.ReadyToInstall, ready.State);
+        Assert.Contains(fixture.Build.GameVersion, ready.Detail, StringComparison.Ordinal);
         await fixture.CreateService().InstallAsync(fixture.Paths, null, CancellationToken.None);
-        Assert.Equal(InstallationState.InstalledHealthy, (await service.InspectAsync(fixture.Paths.GameDirectory, CancellationToken.None)).State);
+        InstallationStatus healthy = await service.InspectAsync(fixture.Paths.GameDirectory, CancellationToken.None);
+        Assert.Equal(InstallationState.InstalledHealthy, healthy.State);
+        Assert.Contains(fixture.Build.GameVersion, healthy.Detail, StringComparison.Ordinal);
 
         File.WriteAllBytes(fixture.Paths.ExecutablePath, [9, 9, 9]);
         InstallationStatus corrupt = await service.InspectAsync(fixture.Paths.GameDirectory, CancellationToken.None);
