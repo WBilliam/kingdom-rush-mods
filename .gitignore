@@ -5,4 +5,7 @@ build/
 dist/
 *.log
 .worktrees/
+.dotnet/
+**/bin/
+**/obj/
 
