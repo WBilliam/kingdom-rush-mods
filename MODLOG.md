@@ -39,3 +39,10 @@
 - Random selection samples without replacement from unlocked and progression-available heroes, selects up to four, mirrors party slot 1, saves once, and refreshes the room immediately.
 - Added deterministic tests for candidate filtering, distinct selection, the four-hero limit, button wiring, save behavior, and UI refresh.
 
+## 2026-10-17 — Combined Windows patcher 0.1.0
+
+- Added a self-contained .NET 8 WinForms installer for Reverse Gold 1.0.1 and Four-Hero 0.1.4.
+- The installer detects Steam libraries, validates the exact clean build, patches the player's own fused archive, and ships no game files.
+- Added verified executable/save backups, pending-transaction recovery, Verify, and byte-exact Uninstall / Restore.
+- Added synthetic archive, lifecycle, Steam discovery, and presenter tests plus a Windows GitHub release workflow and SHA-256 artifact validation.
+

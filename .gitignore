@@ -8,4 +8,6 @@ dist/
 .dotnet/
 **/bin/
 **/obj/
+artifacts/
+release-staging/
 
