@@ -255,7 +255,7 @@ internal sealed class TemporaryInstall : IDisposable
         Build);
 
     internal InstallManifest Manifest(string state) => new(
-        1, "0.1.0", "1.0.1", "0.1.4", Build.BuildId,
+        1, "0.1.1", "1.0.1", "0.1.4", Build.BuildId,
         new DateTimeOffset(2026, 10, 17, 1, 2, 3, TimeSpan.Zero),
         Paths.ExecutablePath, Paths.ExecutablePath + ".test.bak",
         Build.ExecutableSha256, new string('a', 64),

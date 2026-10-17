@@ -1,6 +1,6 @@
 # Kingdom Rush Reverse Gold + Four-Hero Mod Pack
 
-Mod-pack version: 0.1.0. Downloadable releases provide a self-contained Windows GUI that installs Reverse Gold 1.0.1 and Four-Hero 0.1.4 together.
+Mod-pack version: 0.1.1. Downloadable releases provide a self-contained Windows GUI that installs Reverse Gold 1.0.1 and Four-Hero 0.1.4 together.
 
 A reversible runtime extension for the owned Steam edition of **Kingdom Rush**, build `24662480` / `kr1-desktop-6.4.46`. It supports ordered parties of zero to four distinct unlocked heroes.
 
@@ -34,7 +34,7 @@ Download `KingdomRush-ModPack-Setup-<version>-win-x64.exe` and its `.sha256` fil
 Optionally verify the published checksum in PowerShell:
 
 ```powershell
-Get-FileHash .\KingdomRush-ModPack-Setup-0.1.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\KingdomRush-ModPack-Setup-0.1.1-win-x64.exe -Algorithm SHA256
 ```
 
 Close the game, run the installer, confirm the automatically detected Steam directory (or use **Browse**), then select **Install Both Mods**. Use **Verify** at any time to check the patched executable and backups.
@@ -44,7 +44,7 @@ The initial executable is unsigned, so Windows SmartScreen may show an unknown-p
 Installation creates, before replacement:
 
 - A hash-named backup of the clean game executable.
-- A ZIP backup of `%APPDATA%\Kingdom Rush`.
+- A ZIP backup of `%APPDATA%\Kingdom_rush`.
 - `kingdom_rush_modpack_manifest.json` with hashes and restore paths.
 
 Select **Uninstall / Restore** to restore the exact clean executable.
@@ -65,7 +65,7 @@ The Lua behavior tests execute `src/multi_hero.lua` through the target installat
 
 ## Troubleshooting
 
-Runtime diagnostics are written to `%APPDATA%\Kingdom Rush\multi_hero.log`. If a level fails to load, include that log and a screenshot of the error when reporting the problem.
+Runtime diagnostics are written to `%APPDATA%\Kingdom_rush\multi_hero.log`. If a level fails to load, include that log and a screenshot of the error when reporting the problem.
 
 Installer diagnostics are written to `%LOCALAPPDATA%\KingdomRushModPatcher\installer.log`. Other executable mods conflict with this patcher and are rejected as unsupported.
 

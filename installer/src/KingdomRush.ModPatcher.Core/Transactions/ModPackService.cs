@@ -9,7 +9,7 @@ namespace KingdomRush.ModPatcher.Core.Transactions;
 public sealed class ModPackService
 {
     private const long SafetyMargin = 64L * 1024 * 1024;
-    private const string ModPackVersion = "0.1.0";
+    private const string ModPackVersion = "0.1.1";
     private const string ReverseGoldVersion = "1.0.1";
     private const string FourHeroVersion = "0.1.4";
     private readonly SupportedBuild _build;

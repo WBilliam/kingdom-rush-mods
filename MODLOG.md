@@ -48,3 +48,8 @@
 - End-to-end acceptance now proves both embedded payloads install together, corruption is detected, saves remain unchanged, and uninstall restores the original executable byte-for-byte.
 - Final review moved filesystem work off the WinForms UI thread and tightened verification of installer versions, manifest paths, and exact embedded payload bytes.
 
+## 2026-10-17 — Combined Windows patcher 0.1.1
+
+- Fixed save discovery to use the game's actual `%APPDATA%\Kingdom_rush` directory instead of the incorrect space-separated path.
+- Added regression coverage for the real save directory name and updated player documentation.
+

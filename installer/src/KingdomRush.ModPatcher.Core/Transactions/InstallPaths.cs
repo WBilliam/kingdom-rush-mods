@@ -10,7 +10,7 @@ public sealed record InstallPaths(
     public static InstallPaths ForGameDirectory(string gameDirectory, string appDataDirectory)
     {
         string game = Path.GetFullPath(gameDirectory);
-        string saves = Path.Combine(Path.GetFullPath(appDataDirectory), "Kingdom Rush");
+        string saves = Path.Combine(Path.GetFullPath(appDataDirectory), "Kingdom_rush");
         return new InstallPaths(
             game,
             Path.Combine(game, "Kingdom Rush.exe"),

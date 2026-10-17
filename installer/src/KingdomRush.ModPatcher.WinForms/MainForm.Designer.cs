@@ -42,7 +42,7 @@ partial class MainForm
         titleLabel.AutoSize = true;
         titleLabel.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
         titleLabel.Location = new Point(24, 20);
-        titleLabel.Text = "Kingdom Rush Mod Pack 0.1.0";
+        titleLabel.Text = "Kingdom Rush Mod Pack 0.1.1";
 
         gamePathTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         gamePathTextBox.Location = new Point(24, 68);
