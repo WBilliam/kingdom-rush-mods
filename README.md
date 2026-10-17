@@ -1,8 +1,8 @@
-# Kingdom Rush Four-Hero Mod
+# Kingdom Rush Reverse Gold + Four-Hero Mod Pack
 
-Current version: 0.1.4. This release adds a Hero Room `RANDOM x4` button that replaces the party with four distinct currently available heroes.
+Mod-pack version: 0.1.1. Downloadable releases provide a self-contained Windows GUI that installs Reverse Gold 1.0.1 and Four-Hero 0.1.4 together.
 
-A reversible runtime extension for the owned Steam edition of **Kingdom Rush**, build `24662480` / `kr1-desktop-6.4.46`. It extends an existing Reverse Gold 1.0.1 installation and supports ordered parties of zero to four distinct unlocked heroes.
+A reversible runtime extension for the owned Steam edition of **Kingdom Rush**, build `24662480` / `kr1-desktop-6.4.46`. It supports ordered parties of zero to four distinct unlocked heroes.
 
 ## Features
 
@@ -19,57 +19,60 @@ The mod contains original Lua and patching code only. It does not ship the game 
 
 ## Compatibility
 
-The installer intentionally accepts only this exact starting state:
+The installer intentionally accepts only this exact clean starting state:
 
 - Steam build: `24662480`
 - Game version: `kr1-desktop-6.4.46`
-- Reverse Gold: `1.0.1`
-- Patched executable SHA-256: `74fae2529719612080f6353da7f268a09b298dbc1ec8db6a7cd0eb015517f55e`
+- Clean executable SHA-256: `ebb4a3a9fd4fa6a30fb98e2b39fb32f0eff8630d47a3951b658339c26ce91e7b`
 
 An update or unknown executable is rejected. Do not bypass the check without reconfirming the new build.
 
-## Install and recovery
+## Download, install, and recovery
 
-Close the game first. From this directory, run:
+Download `KingdomRush-ModPack-Setup-<version>-win-x64.exe` and its `.sha256` file from the GitHub Release. The installer is self-contained: players do not need Python or a separately installed .NET runtime.
+
+Optionally verify the published checksum in PowerShell:
 
 ```powershell
-python tools\patch_kingdom_rush.py install
-python tools\patch_kingdom_rush.py verify
+Get-FileHash .\KingdomRush-ModPack-Setup-0.1.1-win-x64.exe -Algorithm SHA256
 ```
+
+Close the game, run the installer, confirm the automatically detected Steam directory (or use **Browse**), then select **Install Both Mods**. Use **Verify** at any time to check the patched executable and backups.
+
+The initial executable is unsigned, so Windows SmartScreen may show an unknown-publisher warning. Confirm the filename and published SHA-256 before running it.
 
 Installation creates, before replacement:
 
-- A hash-named backup of the Reverse Gold executable.
-- A ZIP backup of `%APPDATA%\Kingdom Rush`.
-- `multi_hero_manifest.json` with hashes and restore paths.
-- An entry in the game directory's `MODLOG.md`.
+- A hash-named backup of the clean game executable.
+- A ZIP backup of `%APPDATA%\Kingdom_rush`.
+- `kingdom_rush_modpack_manifest.json` with hashes and restore paths.
 
-To restore the exact Reverse Gold executable:
-
-```powershell
-python tools\patch_kingdom_rush.py uninstall
-```
+Select **Uninstall / Restore** to restore the exact clean executable.
 
 Uninstall deliberately leaves current saves untouched. The save-backup path and hash remain in the archived manifest so a user can restore it manually if desired.
 
-Use `--game-dir` and `--save-dir` only for an explicitly reconfirmed installation location. `--expected-sha256` exists for controlled validation and should never be used to guess around a mismatch.
+The public GUI has no force mode, alternate expected hash, or compatibility bypass.
 
 ## Development verification
 
 ```powershell
 python -m unittest discover -s tests -v
+dotnet test KingdomRush.ModPatcher.sln -c Release
+dotnet build installer\src\KingdomRush.ModPatcher.WinForms\KingdomRush.ModPatcher.WinForms.csproj -c Release
 ```
 
 The Lua behavior tests execute `src/multi_hero.lua` through the target installation's own `lua51.dll`. Archive tests use synthetic fused executables and temporary save directories. No automated test writes to the installed game.
 
 ## Troubleshooting
 
-Runtime diagnostics are written to `%APPDATA%\Kingdom Rush\multi_hero.log`. If a level fails to load, include that log and a screenshot of the error when reporting the problem.
+Runtime diagnostics are written to `%APPDATA%\Kingdom_rush\multi_hero.log`. If a level fails to load, include that log and a screenshot of the error when reporting the problem.
+
+Installer diagnostics are written to `%LOCALAPPDATA%\KingdomRushModPatcher\installer.log`. Other executable mods conflict with this patcher and are rejected as unsupported.
 
 ## Credits and disclosure
 
 - Runtime structure reference: [ReBBBorn/Kingdom-Rush](https://github.com/ReBBBorn/Kingdom-Rush).
-- Requires and preserves the separately published Reverse Gold 1.0.1 mod.
+- Includes the author-owned Reverse Gold 1.0.1 module and Four-Hero 0.1.4 module in one installer.
 - Developed with OpenAI Codex. No generated artwork, audio, extracted game assets, executable, or decompiled game source is included.
 - Original mod code is released under the MIT License; see `LICENSE`.
 

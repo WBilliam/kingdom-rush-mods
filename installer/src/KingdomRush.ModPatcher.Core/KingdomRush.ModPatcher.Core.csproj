@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>KingdomRush.ModPatcher.Core</AssemblyName>
+    <RootNamespace>KingdomRush.ModPatcher.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\src\reverse_gold.lua" LogicalName="KingdomRush.ModPatcher.Payloads.reverse_gold.lua" />
+    <EmbeddedResource Include="..\..\..\src\multi_hero.lua" LogicalName="KingdomRush.ModPatcher.Payloads.multi_hero.lua" />
+    <EmbeddedResource Include="Payloads\combined_main.lua" LogicalName="KingdomRush.ModPatcher.Payloads.combined_main.lua" />
+  </ItemGroup>
+</Project>

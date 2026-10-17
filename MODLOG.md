@@ -39,3 +39,17 @@
 - Random selection samples without replacement from unlocked and progression-available heroes, selects up to four, mirrors party slot 1, saves once, and refreshes the room immediately.
 - Added deterministic tests for candidate filtering, distinct selection, the four-hero limit, button wiring, save behavior, and UI refresh.
 
+## 2026-10-17 — Combined Windows patcher 0.1.0
+
+- Added a self-contained .NET 8 WinForms installer for Reverse Gold 1.0.1 and Four-Hero 0.1.4.
+- The installer detects Steam libraries, validates the exact clean build, patches the player's own fused archive, and ships no game files.
+- Added verified executable/save backups, pending-transaction recovery, Verify, and byte-exact Uninstall / Restore.
+- Added synthetic archive, lifecycle, Steam discovery, and presenter tests plus a Windows GitHub release workflow and SHA-256 artifact validation.
+- End-to-end acceptance now proves both embedded payloads install together, corruption is detected, saves remain unchanged, and uninstall restores the original executable byte-for-byte.
+- Final review moved filesystem work off the WinForms UI thread and tightened verification of installer versions, manifest paths, and exact embedded payload bytes.
+
+## 2026-10-17 — Combined Windows patcher 0.1.1
+
+- Fixed save discovery to use the game's actual `%APPDATA%\Kingdom_rush` directory instead of the incorrect space-separated path.
+- Added regression coverage for the real save directory name and updated player documentation.
+

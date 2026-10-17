@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>KingdomRush.ModPatcher</AssemblyName>
+    <RootNamespace>KingdomRush.ModPatcher.WinForms</RootNamespace>
+    <Version>0.1.1</Version>
+    <ApplicationManifest>installer.manifest</ApplicationManifest>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KingdomRush.ModPatcher.Core\KingdomRush.ModPatcher.Core.csproj" />
+  </ItemGroup>
+</Project>

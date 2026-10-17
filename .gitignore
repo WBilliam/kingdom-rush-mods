@@ -4,4 +4,10 @@ __pycache__/
 build/
 dist/
 *.log
+.worktrees/
+.dotnet/
+**/bin/
+**/obj/
+artifacts/
+release-staging/
 

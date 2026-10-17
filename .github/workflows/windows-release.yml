@@ -1,0 +1,57 @@
+name: Windows installer
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Run Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Run .NET tests
+        run: dotnet test KingdomRush.ModPatcher.sln -c Release
+      - name: Build installer
+        run: dotnet build installer/src/KingdomRush.ModPatcher.WinForms/KingdomRush.ModPatcher.WinForms.csproj -c Release --no-restore
+      - name: Publish tagged installer
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          $projectVersion = (Select-Xml -Path 'installer/src/KingdomRush.ModPatcher.WinForms/KingdomRush.ModPatcher.WinForms.csproj' -XPath '/Project/PropertyGroup/Version').Node.InnerText
+          if ($version -ne $projectVersion) { throw "Tag version $version does not match installer version $projectVersion" }
+          $stage = Join-Path $PWD 'release-staging'
+          $publish = Join-Path $PWD 'artifacts/publish'
+          dotnet publish installer/src/KingdomRush.ModPatcher.WinForms/KingdomRush.ModPatcher.WinForms.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $publish
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          $name = "KingdomRush-ModPack-Setup-$version-win-x64.exe"
+          Move-Item -LiteralPath (Join-Path $publish 'KingdomRush.ModPatcher.exe') -Destination (Join-Path $stage $name)
+          $hash = (Get-FileHash -LiteralPath (Join-Path $stage $name) -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath (Join-Path $stage "$name.sha256") -Value "$hash  $name" -Encoding ascii
+          python tools/verify_release.py (Join-Path $stage $name) (Join-Path $stage "$name.sha256")
+      - name: Upload installer artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-rush-modpack-${{ github.ref_name }}-win-x64
+          path: release-staging/*
+          if-no-files-found: error
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create '${{ github.ref_name }}' release-staging/* --generate-notes --verify-tag
